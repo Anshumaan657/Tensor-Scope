@@ -20,3 +20,7 @@ def load_image(path: str) -> torch.Tensor:
         image_array = np.array(rgb_image)
 
     return torch.from_numpy(image_array)
+
+def stack_images(images: list[torch.Tensor]) -> torch.Tensor:
+    """Combine equally shaped CHW images into one NCHW batch."""
+    return torch.stack(images, dim=0)
