@@ -1,6 +1,5 @@
 import torch
 
-
 def crop_batch(
     images: torch.Tensor,
     top: int,
@@ -35,3 +34,34 @@ def channel_statistics(
     )
 
     return means, standard_deviations
+def normalize_batch(
+    batch: torch.Tensor,
+    means: torch.Tensor,
+    standard_deviations: torch.Tensor,
+) -> torch.Tensor:
+    """Normalize an NCHW batch using per-channel statistics."""
+
+    broadcast_means = means.view(1, -1, 1, 1)
+    broadcast_stds = standard_deviations.view(1, -1, 1, 1)
+
+    return (batch - broadcast_means) / broadcast_stds
+
+def rgb_to_grayscale(batch: torch.Tensor) -> torch.Tensor:
+    """Convert an NCHW RGB batch into an NCHW grayscale batch."""
+
+    weights = torch.tensor(
+        [0.299, 0.587, 0.114],
+        dtype=batch.dtype,
+        device=batch.device,
+    ).view(1, 3, 1, 1)
+
+    return (batch * weights).sum(dim=1, keepdim=True)
+
+def nchw_to_nhwc(batch: torch.Tensor) -> torch.Tensor:
+    """Rearrange a batch from NCHW to NHWC."""
+    return batch.permute(0, 2, 3, 1)
+
+
+def nhwc_to_nchw(batch: torch.Tensor) -> torch.Tensor:
+    """Rearrange a batch from NHWC to NCHW."""
+    return batch.permute(0, 3, 1, 2)
