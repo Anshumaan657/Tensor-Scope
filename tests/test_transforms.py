@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from tensor_image_lab.loading import create_synthetic_batch
@@ -110,3 +111,42 @@ def test_nchw_nhwc_round_trip() -> None:
     assert nhwc_batch.shape == (2, 4, 5, 3)
     assert restored_batch.shape == batch.shape
     assert torch.equal(restored_batch, batch)
+
+
+def test_crop_batch_rejects_out_of_bounds_crop() -> None:
+    batch = torch.rand(2, 3, 16, 16)
+
+    with pytest.raises(ValueError, match="beyond the image boundaries"):
+        crop_batch(batch, top=8, left=8, height=16, width=16)
+
+
+def test_channel_statistics_rejects_non_nchw_tensor() -> None:
+    image = torch.rand(3, 16, 16)
+
+    with pytest.raises(ValueError, match="Expected an NCHW batch"):
+        channel_statistics(image)
+
+
+def test_normalize_batch_rejects_wrong_channel_statistics() -> None:
+    batch = torch.rand(2, 3, 8, 8)
+    means = torch.zeros(2)
+    standard_deviations = torch.ones(3)
+
+    with pytest.raises(ValueError, match=r"Means must have shape \[C\]"):
+        normalize_batch(batch, means, standard_deviations)
+
+
+def test_normalize_batch_rejects_zero_standard_deviation() -> None:
+    batch = torch.rand(2, 3, 8, 8)
+    means = torch.zeros(3)
+    standard_deviations = torch.tensor([1.0, 0.0, 1.0])
+
+    with pytest.raises(ValueError, match="greater than zero"):
+        normalize_batch(batch, means, standard_deviations)
+
+
+def test_rgb_to_grayscale_requires_three_channels() -> None:
+    grayscale_batch = torch.rand(2, 1, 8, 8)
+
+    with pytest.raises(ValueError, match="Expected 3 channels"):
+        rgb_to_grayscale(grayscale_batch)
